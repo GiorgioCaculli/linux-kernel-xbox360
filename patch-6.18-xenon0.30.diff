@@ -3648,7 +3648,7 @@ new file mode 100644
 index 0000000000000..4776c3234cc5b
 --- /dev/null
 +++ b/drivers/gpu/drm/tiny/xenos.c
-@@ -0,0 +1,353 @@
+@@ -0,0 +1,367 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +
 +#include <linux/aperture.h>
@@ -3688,6 +3688,10 @@ index 0000000000000..4776c3234cc5b
 +#define DRIVER_DESC "DRM framebuffer driver for Xbox 360's Xenos"
 +#define DRIVER_MAJOR 1
 +#define DRIVER_MINOR 0
++
++#define XENOS_D1GRPH_X_END 0x6134 
++#define XENOS_D1GRPH_Y_END 0x6138
++#define XENOS_AVIVO_D1MODE_DATA_FORMAT 0x6528 
 +
 +struct xenos_fb {
 +	dma_addr_t dma_addr;
@@ -3875,9 +3879,18 @@ index 0000000000000..4776c3234cc5b
 +	struct drm_connector *connector = &xenos->connector;
 +	int ret;
 +
-+	static const struct drm_display_mode mode = { DRM_MODE_INIT(
-+		60, 1280, 720, DRM_MODE_RES_MM(1280, 96ul),
-+		DRM_MODE_RES_MM(720, 96ul)) };
++	uint32_t fb_width = ioread32be(xenos->regs + XENOS_D1GRPH_X_END);
++	uint32_t fb_height = ioread32be(xenos->regs + XENOS_D1GRPH_Y_END);
++	uint32_t is_progressive = ioread32be(xenos-> regs + XENOS_AVIVO_D1MODE_DATA_FORMAT);
++
++	if(is_progressive)
++	{
++		fb_height = fb_height / 2;
++	}
++
++	struct drm_display_mode mode = { DRM_MODE_INIT(
++		60, fb_width, fb_height, DRM_MODE_RES_MM(fb_width, 96ul),
++		DRM_MODE_RES_MM(fb_height, 96ul)) };
 +	static const uint32_t formats[] = { DRM_FORMAT_XRGB8888 };
 +
 +	ret = drmm_mode_config_init(dev);
